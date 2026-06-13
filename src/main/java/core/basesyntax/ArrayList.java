@@ -1,16 +1,15 @@
 package core.basesyntax;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 public class ArrayList<T> implements List<T> {
     private static final int DEFAULT_CAPACITY = 10;
-    private Object[] elementData;
+    private T[] elementData;
     private int size;
 
+    @SuppressWarnings("unchecked")
     public ArrayList() {
-        this.elementData = new Object[DEFAULT_CAPACITY];
+        this.elementData = (T[]) new Object[DEFAULT_CAPACITY];
         this.size = 0;
     }
 
@@ -19,11 +18,20 @@ public class ArrayList<T> implements List<T> {
             return;
         }
         int oldCapacity = elementData.length;
-        int newCapacity = oldCapacity + oldCapacity / 2;
+        int newCapacity = oldCapacity + oldCapacity / 2; // 1.5×
         if (newCapacity < minCapacity) {
             newCapacity = minCapacity;
         }
-        elementData = Arrays.copyOf(elementData, newCapacity);
+        resize(newCapacity);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resize(int newCapacity) {
+        T[] newArray = (T[]) new Object[newCapacity];
+        if (size > 0) {
+            System.arraycopy(elementData, 0, newArray, 0, size);
+        }
+        elementData = newArray;
     }
 
     private void checkIndexForAdd(int index) {
@@ -49,7 +57,7 @@ public class ArrayList<T> implements List<T> {
         checkIndexForAdd(index);
         ensureCapacity(size + 1);
         if (index < size) {
-            System.arraycopy(elementData,index, elementData, index + 1, size - index);
+            System.arraycopy(elementData, index, elementData, index + 1, size - index);
         }
         elementData[index] = value;
         size++;
@@ -62,12 +70,18 @@ public class ArrayList<T> implements List<T> {
         }
         int addCount = list.size();
         ensureCapacity(size + addCount);
+
         if (list == this) {
-            Object[] temp = Arrays.copyOf(elementData, size);
+            @SuppressWarnings("unchecked")
+            T[] temp = (T[]) new Object[size];
+            if (size > 0) {
+                System.arraycopy(elementData, 0, temp, 0, size);
+            }
             System.arraycopy(temp, 0, elementData, size, temp.length);
             size += temp.length;
             return;
         }
+
         for (int i = 0; i < addCount; i++) {
             T item = list.get(i);
             elementData[size++] = item;
@@ -75,10 +89,9 @@ public class ArrayList<T> implements List<T> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public T get(int index) {
         checkIndex(index);
-        return (T) elementData[index];
+        return elementData[index];
     }
 
     @Override
@@ -88,10 +101,9 @@ public class ArrayList<T> implements List<T> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public T remove(int index) {
         checkIndex(index);
-        T removed = (T) elementData[index];
+        T removed = elementData[index];
         int numMoved = size - index - 1;
         if (numMoved > 0) {
             System.arraycopy(elementData, index + 1, elementData, index, numMoved);
@@ -101,18 +113,22 @@ public class ArrayList<T> implements List<T> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public T remove(T element) {
         for (int i = 0; i < size; i++) {
-            Object current = elementData[i];
-            if (Objects.equals(element, current)) {
-                T removed = (T) current;
+            T current = elementData[i];
+            boolean equal;
+            if (element == null) {
+                equal = (current == null);
+            } else {
+                equal = element.equals(current);
+            }
+            if (equal) {
                 int numMoved = size - i - 1;
                 if (numMoved > 0) {
                     System.arraycopy(elementData, i + 1, elementData, i, numMoved);
                 }
                 elementData[--size] = null;
-                return removed;
+                return current;
             }
         }
         throw new NoSuchElementException("Element not found: " + element);
